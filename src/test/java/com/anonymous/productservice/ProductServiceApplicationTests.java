@@ -1,6 +1,9 @@
 package com.anonymous.productservice;
 
 import com.anonymous.productservice.dto.ProductRequest;
+import com.anonymous.productservice.model.Product;
+import com.anonymous.productservice.repository.ProductRepository;
+import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -16,14 +19,14 @@ import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.testcontainers.shaded.org.hamcrest.CoreMatchers;
 import org.testcontainers.utility.DockerImageName;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-@SpringBootTest
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
 @AutoConfigureMockMvc
 class ProductServiceApplicationTests {
@@ -33,6 +36,8 @@ class ProductServiceApplicationTests {
 	private MockMvc mockMvc;
 	@Autowired
 	private ObjectMapper objectMapper;
+	@Autowired
+	private ProductRepository productRepository;
 
 	@DynamicPropertySource
 	static void setProperties(DynamicPropertyRegistry dynamicPropertyRegistry){
@@ -48,13 +53,13 @@ class ProductServiceApplicationTests {
 	}
 	@Test
 	void shouldGetAllProducts() throws Exception {
-		List<ProductRequest> productRequestList = new ArrayList<>();
-		productRequestList.add(getProductRequest());
-		productRequestList.add(ProductRequest.builder().name("samsung M20").description("samsung M20").price(BigDecimal.valueOf(200)).build());
-		ResultActions response = mockMvc.perform(MockMvcRequestBuilders.get("/api/product")
-				.contentType(MediaType.APPLICATION_JSON)
-				.content(objectMapper.writeValueAsString(productRequestList)));
-		response.andExpect(MockMvcResultMatchers.status().isOk());
+		List<Product> productList = new ArrayList<>();
+		productList.add(Product.builder().name("iphone 13").description("iphone 13").price(BigDecimal.valueOf(1200)).build());
+		productList.add(Product.builder().name("samsung M20").description("samsung M20").price(BigDecimal.valueOf(200)).build());
+		productRepository.saveAll(productList);
+		ResultActions response = mockMvc.perform(MockMvcRequestBuilders.get("/api/product"));
+		response.andExpect(MockMvcResultMatchers.status().isOk())
+				.andExpect(MockMvcResultMatchers.jsonPath("$.size()", CoreMatchers.is(productList.size())));
 	}
 
 	private ProductRequest getProductRequest(){
